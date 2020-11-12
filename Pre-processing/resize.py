@@ -63,6 +63,48 @@ def resize(images, pathOut):
     
     return count
 
+def resize_silhouettesRGB(images, silhouettes, pathOut):
+
+    count = 0
+    for image in images:
+
+        if image.dtype != 'uint8':
+            # try:
+            print(image.dtype)
+            image = img_as_ubyte(image)
+            # except ValueError:
+            #     continue
+
+        x,y,w,h = cv2.boundingRect(image)
+
+        if h == 0 or w == 0:
+            count += 1
+            continue
+
+        x_c, y_c = mass_center(image)
+
+        padded = np.zeros((h,h),dtype=np.uint8)
+        paddedRGB = np.zeros((h,h,3),dtype=np.uint8)
+        x_l = h//2-x_c+x
+        x_r = h//2+w-x_c+x
+
+        if h < x_r or x_l < 0:
+            count += 1
+            continue
+
+        padded[:,x_l:x_r] = image[y:y+h,x:x+w]
+        paddedRGB[:,x_l:x_r,0] = silhouettes[count][y:y+h,x:x+w,0]; paddedRGB[:,x_l:x_r,1] = silhouettes[count][y:y+h,x:x+w,1]; paddedRGB[:,x_l:x_r,2] = silhouettes[count][y:y+h,x:x+w,2]
+        resized_image = np.array(Image.fromarray(padded).resize((224,224)))
+        resized_imageRGB = np.array(Image.fromarray(paddedRGB).resize((224,224)))
+
+        # plt.imshow(resized_image)
+        # plt.show()
+        cv2.imwrite( pathOut + "/frame%d.jpg" % count, resized_imageRGB)
+        count += 1
+    
+    return count
+
+
 def resize_skel(image, cen):
 
     if image.dtype != 'uint8':
